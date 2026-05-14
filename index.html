@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LARIO: IL PUNTO DI ROTTURA</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Reveal.js CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+<style>
+  /* ─── ROOT VARIABLES ─── */
+  :root {
+    --black:    #000000;
+    --white:    #e8e4dc;
+    --red:      #FF0000;
+    --red-dim:  #8B0000;
+    --red-glow: rgba(255,0,0,0.35);
+    --grey:     #1a1a1a;
+    --grey2:    #2a2a2a;
+    --mono:     'Space Mono', monospace;
+    --syne:     'Syne', sans-serif;
+  }
+
+  /* ─── GLOBAL RESET & BASE ─── */
+  html, body { margin:0; padding:0; background:#000; }
+
+  .reveal {
+    font-family: var(--mono);
+    background: #000000;
+  }
+  .reveal .slides { text-align: left; }
+  .reveal .slides section {
+    background: #000;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* ─── SCAN LINE OVERLAY ─── */
+  .reveal::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 9999;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.06) 2px,
+      rgba(0,0,0,0.06) 4px
+    );
+    animation: scanroll 8s linear infinite;
+  }
+  @keyframes scanroll {
+    0%   { background-position: 0 0; }
+    100% { background-position: 0 100px; }
+  }
+
+  /* ─── NOISE TEXTURE ─── */
+  .reveal::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 9998;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  /* ─── GLITCH EFFECT ─── */
+  .glitch {
+    font-family: var(--syne);
+    font-weight: 800;
+    position: relative;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+  .glitch::before,
+  .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    font-family: inherit; font-size: inherit; font-weight: inherit;
+    letter-spacing: inherit;
+  }
+  .glitch::before {
+    color: var(--red);
+    animation: glitch1 3.5s infinite;
+    clip-path: polygon(0 10%, 100% 10%, 100% 40%, 0 40%);
+    transform: translate(-3px, 0);
+    opacity: 0.8;
+  }
+  .glitch::after {
+    color: #00ffff;
+    animation: glitch2 3.5s infinite;
+    clip-path: polygon(0 55%, 100% 55%, 100% 80%, 0 80%);
+    transform: translate(3px, 0);
+    opacity: 0.6;
+  }
+  @keyframes glitch1 {
+    0%,94%,100% { transform: translate(0); clip-path: polygon(0 10%,100% 10%,100% 40%,0 40%); }
+    95%  { transform: translate(-4px,2px); clip-path: polygon(0 5%,100% 5%,100% 35%,0 35%); }
+    97%  { transform: translate(4px,-2px); clip-path: polygon(0 20%,100% 20%,100% 50%,0 50%); }
+  }
+  @keyframes glitch2 {
+    0%,96%,100% { transform: translate(0); clip-path: polygon(0 55%,100% 55%,100% 80%,0 80%); }
+    97%  { transform: translate(5px,-1px);  clip-path: polygon(0 60%,100% 60%,100% 85%,0 85%); }
+    99%  { transform: translate(-5px,1px); clip-path: polygon(0 50%,100% 50%,100% 75%,0 75%); }
+  }
+
+  /* ─── RED ACCENT LINE ─── */
+  .accent-line {
+    width: 80px; height: 4px;
+    background: var(--red);
+    margin: 18px 0;
+    box-shadow: 0 0 16px var(--red-glow), 0 0 40px var(--red-glow);
+    animation: pulse-line 2s ease-in-out infinite alternate;
+  }
+  @keyframes pulse-line {
+    from { box-shadow: 0 0 10px var(--red-glow), 0 0 30px var(--red-glow); }
+    to   { box-shadow: 0 0 20px var(--red), 0 0 60px var(--red-glow), 0 0 100px var(--red-glow); }
+  }
+
+  /* ─── TYPOGRAPHY ─── */
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--red);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    opacity: 0.9;
+  }
+  .subtitle {
+    font-family: var(--mono);
+    color: rgba(232,228,220,0.6);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+  .label-red {
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--red);
+    border: 1px solid var(--red);
+    padding: 3px 8px;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 1 — INTRO
+  ───────────────────────────────────────────── */
+  .slide-intro {
+    padding: 60px 80px !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .slide-intro .bg-coord {
+    position: absolute;
+    bottom: 30px; right: 50px;
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    color: rgba(255,0,0,0.25);
+    letter-spacing: 0.15em;
+    line-height: 2;
+  }
+  .slide-intro .big-title {
+    font-size: clamp(3.5rem, 8vw, 7rem);
+    line-height: 0.92;
+    margin: 0;
+  }
+  .slide-intro .subtitle-block {
+    margin-top: 36px;
+    border-left: 3px solid var(--red);
+    padding-left: 20px;
+  }
+  .slide-intro .subtitle-big {
+    font-family: var(--syne);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--white);
+    margin: 0 0 8px 0;
+  }
+  .water-ripple {
+    position: absolute;
+    bottom: -10px; left: 0; right: 0;
+    height: 120px;
+    overflow: hidden;
+  }
+  .water-ripple svg { width: 100%; height: 100%; }
+  .wave1 { animation: wavemove 4s ease-in-out infinite alternate; }
+  .wave2 { animation: wavemove 6s ease-in-out infinite alternate-reverse; opacity: 0.5; }
+  @keyframes wavemove {
+    from { transform: translateX(-20px) scaleY(1); }
+    to   { transform: translateX(20px) scaleY(1.3); }
+  }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 2 — DISSESTO
+  ───────────────────────────────────────────── */
+  .slide-dissesto {
+    padding: 50px 70px !important;
+  }
+  .slide-dissesto h2 {
+    font-family: var(--syne);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    color: var(--white);
+    margin: 0 0 6px 0;
+    line-height: 1;
+  }
+  .svg-container {
+    position: relative;
+    margin-top: 28px;
+    background: #0a0a0a;
+    border: 1px solid #2a2a2a;
+    border-top: 3px solid var(--red);
+    padding: 20px;
+  }
+  .svg-label {
+    position: absolute;
+    font-family: var(--mono);
+    font-size: 0.5rem;
+    letter-spacing: 0.12em;
+    color: rgba(232,228,220,0.4);
+    text-transform: uppercase;
+  }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 3 — BRIENNO
+  ───────────────────────────────────────────── */
+  .slide-brienno {
+    padding: 50px 70px !important;
+  }
+  .slide-brienno h2 {
+    font-family: var(--syne);
+    font-size: clamp(2rem,5vw,3rem);
+    font-weight: 800;
+    color: var(--white);
+    margin: 0 0 4px 0;
+  }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 28px;
+  }
+  .col-data {
+    border: 1px solid #222;
+    border-top: 3px solid var(--red);
+    padding: 24px;
+    background: #080808;
+  }
+  .col-text {
+    padding: 0 0 0 16px;
+    border-left: 1px solid #222;
+  }
+  .stat-block {
+    margin-bottom: 22px;
+  }
+  .stat-block .stat-num {
+    font-family: var(--syne);
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--red);
+    line-height: 1;
+    text-shadow: 0 0 20px var(--red-glow);
+  }
+  .stat-block .stat-unit {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: rgba(232,228,220,0.5);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .stat-block .stat-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: rgba(232,228,220,0.8);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .rain-bar-container {
+    margin-top: 16px;
+  }
+  .rain-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .rain-bar-label {
+    font-family: var(--mono);
+    font-size: 0.5rem;
+    color: rgba(232,228,220,0.5);
+    width: 55px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .rain-bar-track {
+    flex: 1;
+    height: 8px;
+    background: #111;
+    border: 1px solid #222;
+    position: relative;
+    overflow: hidden;
+  }
+  .rain-bar-fill {
+    height: 100%;
+    background: var(--red);
+    box-shadow: 0 0 8px var(--red-glow);
+    transform-origin: left;
+    animation: bar-grow 1.5s ease-out forwards;
+    transform: scaleX(0);
+  }
+  @keyframes bar-grow {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  .rain-bar-val {
+    font-family: var(--mono);
+    font-size: 0.5rem;
+    color: var(--red);
+    width: 40px;
+    flex-shrink: 0;
+  }
+  .col-text p {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: rgba(232,228,220,0.75);
+    line-height: 1.8;
+    margin-bottom: 14px;
+  }
+  .col-text .highlight {
+    color: var(--red);
+    font-weight: 700;
+  }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 4 — PARASSITA ANTROPICO
+  ───────────────────────────────────────────── */
+  .slide-cemento {
+    padding: 50px 70px !important;
+  }
+  .slide-cemento h2 {
+    font-family: var(--syne);
+    font-size: clamp(2rem,5vw,3rem);
+    font-weight: 800;
+    color: var(--white);
+    margin: 0 0 4px 0;
+  }
+  .brutal-table {
+    width: 100%;
+    margin-top: 28px;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+  }
+  .brutal-table thead tr {
+    border-bottom: 3px solid var(--red);
+  }
+  .brutal-table th {
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--red);
+    font-weight: 700;
+  }
+  .brutal-table tbody tr {
+    border-bottom: 1px solid #1c1c1c;
+    transition: background 0.2s;
+  }
+  .brutal-table tbody tr:hover {
+    background: #0f0f0f;
+  }
+  .brutal-table td {
+    padding: 14px 14px;
+    color: rgba(232,228,220,0.8);
+    vertical-align: top;
+  }
+  .brutal-table td.danger {
+    color: var(--red);
+    font-weight: 700;
+    text-shadow: 0 0 10px var(--red-glow);
+  }
+  .brutal-table td .bar-inline {
+    display: block;
+    height: 4px;
+    background: var(--red);
+    margin-top: 6px;
+    box-shadow: 0 0 6px var(--red-glow);
+  }
+  .total-row td {
+    border-top: 2px solid #333 !important;
+    color: var(--white) !important;
+    font-weight: 700;
+  }
+  .source-note {
+    font-family: var(--mono);
+    font-size: 0.48rem;
+    color: rgba(232,228,220,0.3);
+    margin-top: 14px;
+    letter-spacing: 0.06em;
+  }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 5 — EFFETTO DIGA
+  ───────────────────────────────────────────── */
+  .slide-diga {
+    padding: 50px 70px !important;
+  }
+  .slide-diga h2 {
+    font-family: var(--syne);
+    font-size: clamp(2rem,5vw,3rem);
+    font-weight: 800;
+    color: var(--white);
+    margin: 0 0 4px 0;
+  }
+  .diga-layout {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 36px;
+    margin-top: 28px;
+    align-items: start;
+  }
+  .diga-chart { }
+  .level-chart-wrap {
+    background: #060606;
+    border: 1px solid #1e1e1e;
+    border-top: 3px solid var(--red);
+    padding: 20px;
+  }
+  .diga-info { }
+  .info-card {
+    border: 1px solid #1e1e1e;
+    border-left: 3px solid var(--red);
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    background: #050505;
+  }
+  .info-card .ic-label {
+    font-family: var(--mono);
+    font-size: 0.5rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 6px;
+  }
+  .info-card .ic-val {
+    font-family: var(--syne);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1;
+  }
+  .info-card .ic-desc {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: rgba(232,228,220,0.55);
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 6 — FUTURO / CTA
+  ───────────────────────────────────────────── */
+  .slide-futuro {
+    padding: 60px 80px !important;
+    position: relative;
+    overflow: hidden;
+  }
+  .slide-futuro h2 {
+    font-family: var(--syne);
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 800;
+    color: var(--red);
+    margin: 0;
+    line-height: 0.9;
+    text-shadow: 0 0 30px var(--red-glow), 0 0 80px var(--red-glow);
+    animation: redpulse 2.5s ease-in-out infinite alternate;
+  }
+  @keyframes redpulse {
+    from { text-shadow: 0 0 20px var(--red-glow); }
+    to   { text-shadow: 0 0 40px var(--red), 0 0 90px var(--red-glow); }
+  }
+  .cta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 36px;
+  }
+  .cta-card {
+    border: 1px solid #1e1e1e;
+    border-top: 2px solid var(--red);
+    padding: 20px 16px;
+    background: #050505;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-card::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 0;
+    background: rgba(255,0,0,0.04);
+    transition: height 0.4s;
+  }
+  .cta-card:hover::before { height: 100%; }
+  .cta-num {
+    font-family: var(--syne);
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: rgba(255,0,0,0.15);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .cta-title {
+    font-family: var(--syne);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .cta-body {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: rgba(232,228,220,0.5);
+    line-height: 1.7;
+  }
+  .slide-futuro .final-line {
+    margin-top: 32px;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: rgba(232,228,220,0.3);
+    letter-spacing: 0.12em;
+  }
+  .tremor-line {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--red), transparent);
+    margin: 20px 0;
+    animation: tremor 0.2s ease-in-out infinite;
+  }
+  @keyframes tremor {
+    0%,100% { transform: translateX(0) scaleX(1); opacity: 0.8; }
+    25%  { transform: translateX(-2px) scaleX(0.98); opacity: 1; }
+    75%  { transform: translateX(2px) scaleX(1.02); opacity: 0.6; }
+  }
+
+  /* ─── Reveal overrides ─── */
+  .reveal .progress { color: var(--red); }
+  .reveal .controls { color: var(--red); }
+  .reveal .slide-number {
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    color: rgba(255,0,0,0.4);
+    background: transparent;
+    letter-spacing: 0.1em;
+  }
+  .reveal .controls button { color: var(--red) !important; }
+</style>
+</head>
+<body>
+
+<div class="reveal">
+  <div class="slides">
+
+    <!-- ══════════════════════════════════
+         SLIDE 1 — INTRO
+    ══════════════════════════════════ -->
+    <section class="slide-intro">
+      <div class="tag">// SISTEMA LACUSTRE LARIANO — ANALISI CRITICA</div>
+
+      <h1 class="glitch big-title" data-text="LARIO:">LARIO:</h1>
+      <h1 class="glitch big-title" data-text="EROSIONE" style="color:var(--red);text-shadow:0 0 40px var(--red-glow);">EROSIONE</h1>
+
+      <div class="accent-line" style="margin-top:24px;"></div>
+
+      <div class="subtitle-block">
+        <p class="subtitle-big">Dinamiche naturali vs Violenza Antropica</p>
+        <p class="subtitle">Un'analisi spietata del territorio lariano: dove la geologia incontra<br>la negligenza umana e il futuro si gioca sul filo della catastrofe.</p>
+      </div>
+
+      <div class="bg-coord">
+        LAT 45.9833° N / LON 9.2667° E<br>
+        QUOTA MEDIA VERSANTI: 600–1600 m s.l.m.<br>
+        LUNGHEZZA LAGO: 46 km / PROFONDITÀ MAX: 425 m<br>
+        BACINO IMBRIFERO: 4.552 km²
+      </div>
+
+      <!-- Animated water at bottom -->
+      <div class="water-ripple">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path class="wave1" d="M0,40 C150,80 350,0 600,40 C850,80 1050,0 1200,40 L1200,120 L0,120 Z"
+                fill="rgba(255,0,0,0.06)" stroke="rgba(255,0,0,0.2)" stroke-width="1"/>
+          <path class="wave2" d="M0,60 C200,20 400,90 600,60 C800,30 1000,90 1200,60 L1200,120 L0,120 Z"
+                fill="rgba(255,0,0,0.04)" stroke="rgba(255,0,0,0.1)" stroke-width="1"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════
+         SLIDE 2 — IL DISSESTO
+    ══════════════════════════════════ -->
+    <section class="slide-dissesto">
+      <div class="tag">// MORFOLOGIA — SEZIONE 02</div>
+      <h2>IL DISSESTO<br><span style="color:var(--red)">IDROGEOLOGICO</span></h2>
+      <div class="accent-line"></div>
+      <p class="subtitle" style="margin-top:0;font-size:0.68rem;">Profilo batimetrico e pendenza dei versanti: corridoio Bellano–Varenna</p>
+
+      <div class="svg-container">
+        <span class="svg-label" style="top:10px;left:14px;">SEZIONE TRASVERSALE — SCALA APPROSSIMATIVA</span>
+        <span class="svg-label" style="bottom:10px;right:14px;">PENDENZA MEDIA VERSANTE OVEST: 42° / EST: 38°</span>
+        <svg viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" width="100%" style="display:block;">
+          <defs>
+            <linearGradient id="lakeGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#001a33"/>
+              <stop offset="100%" stop-color="#000510"/>
+            </linearGradient>
+            <linearGradient id="rockL" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#1a1a1a"/>
+              <stop offset="100%" stop-color="#0d0d0d"/>
+            </linearGradient>
+            <linearGradient id="rockR" x1="1" y1="0" x2="0" y2="0">
+              <stop offset="0%" stop-color="#1a1a1a"/>
+              <stop offset="100%" stop-color="#0d0d0d"/>
+            </linearGradient>
+            <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="rgba(255,0,0,0.7)"/>
+            </marker>
+          </defs>
+
+          <!-- Sky/background -->
+          <rect width="900" height="260" fill="#000"/>
+
+          <!-- Left slope (versante ovest - more steep) -->
+          <path d="M0,0 L0,260 L200,260 L320,130 L360,80 L340,0 Z" fill="url(#rockL)" stroke="#2a2a2a" stroke-width="0.5"/>
+          <!-- Rock strata lines left -->
+          <line x1="30" y1="40" x2="290" y2="200" stroke="#333" stroke-width="0.8" stroke-dasharray="4,4"/>
+          <line x1="70" y1="20" x2="310" y2="190" stroke="#2a2a2a" stroke-width="0.6" stroke-dasharray="4,6"/>
+          <line x1="120" y1="10" x2="330" y2="170" stroke="#2a2a2a" stroke-width="0.6" stroke-dasharray="4,6"/>
+
+          <!-- Instability indicator on left slope -->
+          <path d="M80,80 L130,140 L100,145 L120,175" fill="none" stroke="rgba(255,0,0,0.6)" stroke-width="2" stroke-dasharray="5,3">
+            <animateTransform attributeName="transform" type="translate" values="0,0; 2,1; 0,0" dur="2s" repeatCount="indefinite"/>
+          </path>
+          <circle cx="100" cy="145" r="4" fill="none" stroke="rgba(255,0,0,0.8)" stroke-width="1.5">
+            <animate attributeName="r" values="4;7;4" dur="1.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+          </circle>
+
+          <!-- Right slope (versante est) -->
+          <path d="M900,0 L900,260 L700,260 L580,130 L545,85 L560,0 Z" fill="url(#rockR)" stroke="#2a2a2a" stroke-width="0.5"/>
+          <!-- Rock strata lines right -->
+          <line x1="870" y1="40" x2="610" y2="200" stroke="#333" stroke-width="0.8" stroke-dasharray="4,4"/>
+          <line x1="830" y1="20" x2="590" y2="190" stroke="#2a2a2a" stroke-width="0.6" stroke-dasharray="4,6"/>
+
+          <!-- Lake body -->
+          <path d="M320,130 C360,190 400,220 450,230 C500,240 550,238 580,230 C620,220 640,190 660,130 L680,260 L200,260 Z"
+                fill="url(#lakeGrad)" stroke="rgba(0,80,180,0.4)" stroke-width="1"/>
+          <!-- Lake surface animated -->
+          <path d="M310,128 C360,122 400,135 450,128 C500,121 550,130 590,128 C620,126 650,132 665,128"
+                fill="none" stroke="rgba(0,120,255,0.3)" stroke-width="2">
+            <animateTransform attributeName="transform" type="translate" values="0,0;3,1;-3,-1;0,0" dur="4s" repeatCount="indefinite"/>
+          </path>
+          <path d="M312,131 C360,126 400,138 450,132 C500,125 550,134 588,131"
+                fill="none" stroke="rgba(0,100,220,0.15)" stroke-width="1">
+            <animateTransform attributeName="transform" type="translate" values="0,0;-2,0;2,0;0,0" dur="5s" repeatCount="indefinite"/>
+          </path>
+
+          <!-- Depth indicator -->
+          <line x1="450" y1="128" x2="450" y2="230" stroke="rgba(255,255,255,0.1)" stroke-width="0.8" stroke-dasharray="3,3"/>
+          <text x="460" y="180" fill="rgba(255,255,255,0.2)" font-family="Space Mono, monospace" font-size="9" letter-spacing="1">425 m</text>
+
+          <!-- Angle indicators -->
+          <path d="M310,260 L310,180 L360,260 Z" fill="none" stroke="rgba(255,0,0,0.5)" stroke-width="1"/>
+          <text x="295" y="250" fill="rgba(255,0,0,0.7)" font-family="Space Mono, monospace" font-size="9">42°</text>
+
+          <path d="M590,260 L590,188 L545,260 Z" fill="none" stroke="rgba(255,0,0,0.5)" stroke-width="1"/>
+          <text x="555" y="250" fill="rgba(255,0,0,0.7)" font-family="Space Mono, monospace" font-size="9">38°</text>
+
+          <!-- Labels -->
+          <text x="60" y="120" fill="rgba(232,228,220,0.5)" font-family="Space Mono, monospace" font-size="10" letter-spacing="1">BELLANO</text>
+          <text x="60" y="135" fill="rgba(232,228,220,0.3)" font-family="Space Mono, monospace" font-size="8">versante ovest</text>
+
+          <text x="700" y="120" fill="rgba(232,228,220,0.5)" font-family="Space Mono, monospace" font-size="10" letter-spacing="1">VARENNA</text>
+          <text x="700" y="135" fill="rgba(232,228,220,0.3)" font-family="Space Mono, monospace" font-size="8">versante est</text>
+
+          <!-- Frana indicator -->
+          <text x="55" y="160" fill="rgba(255,0,0,0.85)" font-family="Space Mono, monospace" font-size="8" letter-spacing="1">⚠ FRANA ATTIVA</text>
+
+          <!-- Depth labels -->
+          <text x="350" y="20" fill="rgba(232,228,220,0.2)" font-family="Space Mono, monospace" font-size="8">LIVELLO LACUALE: 197.4 m s.l.m.</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════
+         SLIDE 3 — BRIENNO 2021
+    ══════════════════════════════════ -->
+    <section class="slide-brienno">
+      <div class="tag">// CASE STUDY — SEZIONE 03</div>
+      <h2>BRIENNO <span style="color:var(--red)">2021</span></h2>
+      <div class="accent-line"></div>
+
+      <div class="two-col">
+        <!-- LEFT: Data -->
+        <div class="col-data">
+          <div class="label-red">Evento 13–14 Agosto 2021</div>
+
+          <div class="stat-block">
+            <div class="stat-num">148</div>
+            <div class="stat-unit">mm / 24h</div>
+            <div class="stat-label">Precipitazione totale registrata.<br>Media mensile agosto: 74 mm.</div>
+          </div>
+
+          <div class="stat-block">
+            <div class="stat-num" style="font-size:2.2rem;">+200%</div>
+            <div class="stat-unit">Anomalia pluviometrica</div>
+            <div class="stat-label">Rispetto alla media climatologica del periodo 1981–2010.</div>
+          </div>
+
+          <!-- Rain bars -->
+          <div class="rain-bar-container">
+            <div style="font-family:var(--mono);font-size:0.5rem;color:rgba(232,228,220,0.35);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">Intensità oraria picco evento</div>
+            <div class="rain-bar-row">
+              <span class="rain-bar-label">02:00</span>
+              <div class="rain-bar-track"><div class="rain-bar-fill" style="--w:0.3;animation-delay:0.2s;width:30%"></div></div>
+              <span class="rain-bar-val">12 mm</span>
+            </div>
+            <div class="rain-bar-row">
+              <span class="rain-bar-label">04:00</span>
+              <div class="rain-bar-track"><div class="rain-bar-fill" style="animation-delay:0.4s;width:62%"></div></div>
+              <span class="rain-bar-val">28 mm</span>
+            </div>
+            <div class="rain-bar-row">
+              <span class="rain-bar-label">06:00</span>
+              <div class="rain-bar-track"><div class="rain-bar-fill" style="animation-delay:0.6s;width:95%"></div></div>
+              <span class="rain-bar-val">43 mm</span>
+            </div>
+            <div class="rain-bar-row">
+              <span class="rain-bar-label">08:00</span>
+              <div class="rain-bar-track"><div class="rain-bar-fill" style="animation-delay:0.8s;width:75%"></div></div>
+              <span class="rain-bar-val">34 mm</span>
+            </div>
+            <div class="rain-bar-row">
+              <span class="rain-bar-label">10:00</span>
+              <div class="rain-bar-track"><div class="rain-bar-fill" style="animation-delay:1s;width:42%"></div></div>
+              <span class="rain-bar-val">19 mm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Narrative -->
+        <div class="col-text">
+          <div class="label-red">Cronaca del Disastro</div>
+          <p>Alle <span class="highlight">03:47</span> del 14 agosto, il torrente Senagra rompe gli argini. La SS340 Regina viene sepolta sotto due metri di fango e detriti. <span class="highlight">Brienno, 320 abitanti, viene tagliata fuori dal mondo</span>.</p>
+          <p>Il paese rimane isolato per <span class="highlight">oltre 72 ore</span>. I rifornimenti arrivano solo via lago. L'unico accesso carrabile viene obliterato da un debris flow stimato in <span class="highlight">15.000 m³</span> di materiale solido.</p>
+          <p>Non è un evento eccezionale. <span class="highlight">È la norma</span>. Dal 2000 al 2023, il bacino lariano ha registrato <span class="highlight">47 eventi alluvionali significativi</span>. La frequenza aumenta del 12% per decade.</p>
+          <p style="color:rgba(255,0,0,0.7);border-left:2px solid var(--red);padding-left:12px;margin-top:20px;font-size:0.65rem;">
+            "Il territorio non ha ceduto. Il territorio ha semplicemente restituito ciò che gli era stato tolto."
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════
+         SLIDE 4 — PARASSITA ANTROPICO
+    ══════════════════════════════════ -->
+    <section class="slide-cemento">
+      <div class="tag">// CONSUMO DI SUOLO — SEZIONE 04</div>
+      <h2>IL PARASSITA<br><span style="color:var(--red)">ANTROPICO</span></h2>
+      <div class="accent-line"></div>
+
+      <table class="brutal-table">
+        <thead>
+          <tr>
+            <th>Comune</th>
+            <th>Sup. Totale (ha)</th>
+            <th>Sup. Consumata (ha)</th>
+            <th>% Consumo</th>
+            <th>Var. 2012–2022</th>
+            <th>Classe Rischio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--white);font-weight:700;">Cabiate (CO)</td>
+            <td>425</td>
+            <td class="danger">204
+              <span class="bar-inline" style="width:90%"></span>
+            </td>
+            <td class="danger">48.0%</td>
+            <td>+4.2%</td>
+            <td><span style="color:var(--red);letter-spacing:0.1em">■■■■□ ALTO</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--white);font-weight:700;">Erba (CO)</td>
+            <td>1.672</td>
+            <td class="danger">638
+              <span class="bar-inline" style="width:72%"></span>
+            </td>
+            <td class="danger">38.2%</td>
+            <td>+3.1%</td>
+            <td><span style="color:var(--red);letter-spacing:0.1em">■■■□□ MEDIO-ALTO</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--white);font-weight:700;">Mariano C. (CO)</td>
+            <td>881</td>
+            <td class="danger">396
+              <span class="bar-inline" style="width:85%"></span>
+            </td>
+            <td class="danger">44.9%</td>
+            <td>+5.7%</td>
+            <td><span style="color:var(--red);letter-spacing:0.1em">■■■■□ ALTO</span></td>
+          </tr>
+          <tr>
+            <td style="color:var(--white);font-weight:700;">Media Brianza CO</td>
+            <td>—</td>
+            <td>—</td>
+            <td>31.4%</td>
+            <td>+3.6%</td>
+            <td><span style="color:orange;letter-spacing:0.1em">■■■□□ MEDIO</span></td>
+          </tr>
+          <tr class="total-row">
+            <td>Media Nazionale</td>
+            <td>—</td>
+            <td>—</td>
+            <td>7.1%</td>
+            <td>+0.8%</td>
+            <td style="color:rgba(232,228,220,0.4)!important;">■□□□□ BASSO</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="source-note">FONTE: ISPRA — Rapporto Nazionale sul Consumo di Suolo 2023, Tabelle regionali Lombardia. I dati comunali sono estratti dalle elaborazioni GIS su ortofoto 2022. La variazione 2012–2022 è calcolata su superfici impermeabilizzate nette.</p>
+    </section>
+
+    <!-- ══════════════════════════════════
+         SLIDE 5 — EFFETTO DIGA
+    ══════════════════════════════════ -->
+    <section class="slide-diga">
+      <div class="tag">// GESTIONE IDRICA — SEZIONE 05</div>
+      <h2>L'EFFETTO<br><span style="color:var(--red)">DIGA</span></h2>
+      <div class="accent-line"></div>
+
+      <div class="diga-layout">
+        <div class="diga-chart">
+          <div class="level-chart-wrap">
+            <div style="font-family:var(--mono);font-size:0.5rem;letter-spacing:0.15em;color:rgba(255,0,0,0.7);text-transform:uppercase;margin-bottom:14px;">Oscillazione livello Lago di Como — Diga di Olginate</div>
+            <svg viewBox="0 0 460 200" xmlns="http://www.w3.org/2000/svg" width="100%">
+              <defs>
+                <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(0,60,180,0.4)"/>
+                  <stop offset="100%" stop-color="rgba(0,20,60,0.1)"/>
+                </linearGradient>
+              </defs>
+              <!-- Grid lines -->
+              <line x1="40" y1="20" x2="440" y2="20" stroke="#1a1a1a" stroke-width="0.8"/>
+              <line x1="40" y1="60" x2="440" y2="60" stroke="#1a1a1a" stroke-width="0.8"/>
+              <line x1="40" y1="100" x2="440" y2="100" stroke="#1a1a1a" stroke-width="0.8"/>
+              <line x1="40" y1="140" x2="440" y2="140" stroke="#1a1a1a" stroke-width="0.8"/>
+              <line x1="40" y1="180" x2="440" y2="180" stroke="#1a1a1a" stroke-width="0.8"/>
+
+              <!-- Y labels -->
+              <text x="6" y="24" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="8">+2.0</text>
+              <text x="6" y="64" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="8">+1.0</text>
+              <text x="10" y="104" fill="rgba(232,232,220,0.5)" font-family="Space Mono" font-size="8">0.0</text>
+              <text x="6" y="144" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="8">−1.0</text>
+              <text x="6" y="184" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="8">−2.0</text>
+
+              <!-- X labels -->
+              <text x="40"  y="196" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="7">GEN</text>
+              <text x="105" y="196" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="7">MAR</text>
+              <text x="172" y="196" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="7">MAG</text>
+              <text x="238" y="196" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="7">LUG</text>
+              <text x="305" y="196" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="7">SET</text>
+              <text x="372" y="196" fill="rgba(232,228,220,0.3)" font-family="Space Mono" font-size="7">NOV</text>
+
+              <!-- Zero line -->
+              <line x1="40" y1="100" x2="440" y2="100" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4,4"/>
+
+              <!-- Water area -->
+              <path d="M40,130 C80,115 110,90 140,75 C170,60 190,50 220,48 C250,46 265,55 290,70 C315,85 340,105 365,118 C390,130 415,125 440,120 L440,180 L40,180 Z"
+                    fill="url(#wg)"/>
+
+              <!-- Level line -->
+              <path d="M40,130 C80,115 110,90 140,75 C170,60 190,50 220,48 C250,46 265,55 290,70 C315,85 340,105 365,118 C390,130 415,125 440,120"
+                    fill="none" stroke="rgba(0,150,255,0.8)" stroke-width="2">
+                <animate attributeName="d"
+                  values="
+                    M40,130 C80,115 110,90 140,75 C170,60 190,50 220,48 C250,46 265,55 290,70 C315,85 340,105 365,118 C390,130 415,125 440,120;
+                    M40,132 C80,117 110,92 140,77 C170,62 190,52 220,50 C250,48 265,57 290,72 C315,87 340,107 365,120 C390,132 415,127 440,122;
+                    M40,130 C80,115 110,90 140,75 C170,60 190,50 220,48 C250,46 265,55 290,70 C315,85 340,105 365,118 C390,130 415,125 440,120"
+                  dur="4s" repeatCount="indefinite"/>
+              </path>
+
+              <!-- Danger threshold (max regolazione) -->
+              <line x1="40" y1="55" x2="440" y2="55" stroke="rgba(255,0,0,0.4)" stroke-width="1" stroke-dasharray="6,3"/>
+              <text x="350" y="51" fill="rgba(255,0,0,0.7)" font-family="Space Mono" font-size="7">LIM. MAX REG.</text>
+
+              <!-- Danger threshold (min) -->
+              <line x1="40" y1="155" x2="440" y2="155" stroke="rgba(255,150,0,0.4)" stroke-width="1" stroke-dasharray="6,3"/>
+              <text x="350" y="151" fill="rgba(255,150,0,0.6)" font-family="Space Mono" font-size="7">LIM. MIN REG.</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="diga-info">
+          <div class="info-card">
+            <div class="ic-label">Anno di costruzione</div>
+            <div class="ic-val">1946</div>
+            <div class="ic-desc">La Diga di Olginate controlla il deflusso del Lago di Como verso il fiume Adda. Opera idraulica di regolazione di importanza strategica.</div>
+          </div>
+          <div class="info-card">
+            <div class="ic-label">Escursione gestita</div>
+            <div class="ic-val">±1.35 m</div>
+            <div class="ic-desc">L'oscillazione artificiale del livello causa cicli di saturazione e desaturazione dei versanti lacuali, indebolendo le sponde argillose.</div>
+          </div>
+          <div class="info-card">
+            <div class="ic-label">Correlazione frane</div>
+            <div class="ic-val" style="color:var(--red);">+67%</div>
+            <div class="ic-desc">Degli eventi franosi costieri registrati nel periodo 1990–2020, il 67% si verifica entro 3 settimane da un'abbassamento rapido del livello (&gt;0.4 m/settimana).</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════
+         SLIDE 6 — FUTURO / CTA
+    ══════════════════════════════════ -->
+    <section class="slide-futuro">
+      <div class="tag">// RESILIENZA — SEZIONE 06</div>
+      <div class="tremor-line"></div>
+
+      <h2>AGIRE<br>ORA</h2>
+      <p style="font-family:var(--mono);font-size:0.75rem;color:rgba(232,228,220,0.55);margin:12px 0 0 0;max-width:500px;line-height:1.7;">
+        Il Lario non aspetta. I versanti non aspettano. La finestra di intervento si restringe ad ogni stagione di piogge. Tre assi strategici per invertire la rotta:
+      </p>
+
+      <div class="cta-grid">
+        <div class="cta-card">
+          <div class="cta-num">01</div>
+          <div class="cta-title">Mappatura Dinamica</div>
+          <div class="cta-body">
+            Sistema permanente di monitoraggio con sensori IoT su 48 punti critici dei versanti tra Dervio e Lenno. Integrazione con il modello IFFI-ARPA Lombardia per allerta precoce.
+          </div>
+        </div>
+        <div class="cta-card">
+          <div class="cta-num">02</div>
+          <div class="cta-title">Stop al Consumo</div>
+          <div class="cta-body">
+            Moratoria immediata sulle nuove impermeabilizzazioni nei Comuni con consumo di suolo &gt;35%. Riforestazione obbligatoria delle aree critiche come compensazione urbanistica.
+          </div>
+        </div>
+        <div class="cta-card">
+          <div class="cta-num">03</div>
+          <div class="cta-title">Gestione Adattiva</div>
+          <div class="cta-body">
+            Revisione del protocollo di regolazione della Diga di Olginate. Gradiente massimo di abbassamento: 0.15 m/settimana nei periodi di piogge intense e transizioni stagionali.
+          </div>
+        </div>
+      </div>
+
+      <div class="final-line" style="margin-top:28px;">
+        Il Lario esiste da 10.000 anni. La nostra gestione da 150. Gli errori sono recenti. La correzione è possibile. // END_TRANSMISSION
+      </div>
+    </section>
+
+  </div><!-- /slides -->
+</div><!-- /reveal -->
+
+<!-- Reveal.js -->
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    transition: 'convex',
+    transitionSpeed: 'slow',
+    backgroundTransition: 'fade',
+    controls: true,
+    progress: true,
+    slideNumber: 'c/t',
+    keyboard: true,
+    overview: true,
+    center: false,
+    touch: true,
+    loop: false,
+    autoSlide: 0,
+    mouseWheel: false,
+    width: '100%',
+    height: '100%',
+    margin: 0,
+    minScale: 0.5,
+    maxScale: 1.5,
+  });
+
+  /* ─── GLITCH HEARTBEAT ─── */
+  // Occasional full-screen flash glitch
+  function triggerPageGlitch() {
+    const el = document.querySelector('.reveal');
+    const colors = ['rgba(255,0,0,0.03)', 'rgba(0,255,255,0.02)', 'rgba(255,0,0,0.05)'];
+    let c = 0;
+    const flicker = setInterval(() => {
+      document.body.style.outline = `1px solid rgba(255,0,0,${Math.random() * 0.15})`;
+      c++;
+      if (c > 5) {
+        clearInterval(flicker);
+        document.body.style.outline = 'none';
+      }
+    }, 80);
+  }
+  setInterval(triggerPageGlitch, 7000 + Math.random() * 5000);
+
+  /* ─── RAIN BAR ANIMATION on slide enter ─── */
+  Reveal.on('slidechanged', event => {
+    const fills = event.currentSlide.querySelectorAll('.rain-bar-fill');
+    fills.forEach((el, i) => {
+      el.style.animation = 'none';
+      void el.offsetWidth; // reflow
+      el.style.animation = `bar-grow 1.2s ease-out ${i * 0.2}s forwards`;
+    });
+  });
+</script>
+</body>
+</html>
