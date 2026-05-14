@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LARIO OSCURO — Erosione</title>
+
+<!-- Reveal.js -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Share+Tech+Mono&family=Cormorant+Garamond:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
+
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<style>
+  :root {
+    --black: #000000;
+    --concrete: #2a2a2a;
+    --concrete-light: #4a4a4a;
+    --concrete-mid: #333333;
+    --red: #FF0000;
+    --red-dim: rgba(255,0,0,0.15);
+    --red-mid: rgba(255,0,0,0.4);
+    --white: #e8e8e0;
+    --grey: #888880;
+    --mono: 'Share Tech Mono', monospace;
+    --serif: 'IM Fell English', serif;
+    --display: 'Cormorant Garamond', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .reveal { background: var(--black); }
+  .reveal .slides { font-family: var(--mono); }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 9999;
+    animation: flicker 0.15s infinite;
+  }
+
+  @keyframes flicker {
+    0%,100% { opacity: 0.04; }
+    50% { opacity: 0.06; }
+  }
+
+  /* ── SCANLINES ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* ── SLIDE BASE ── */
+  .reveal .slides section {
+    background: var(--black);
+    height: 100vh;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 60px 80px;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── SLIDE 1 — TITOLO GLITCH ── */
+  .slide-1 {
+    background: var(--black) !important;
+  }
+
+  .slide-1::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 80%, rgba(255,0,0,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 80% at 80% 20%, rgba(40,40,40,0.8) 0%, transparent 60%);
+    animation: murkWater 8s ease-in-out infinite alternate;
+  }
+
+  @keyframes murkWater {
+    0%   { transform: scale(1) translate(0,0); opacity: 1; }
+    50%  { transform: scale(1.05) translate(-10px, 5px); opacity: 0.8; }
+    100% { transform: scale(1) translate(5px, -5px); opacity: 1; }
+  }
+
+  .label-top {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--red);
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .glitch-title {
+    font-family: var(--serif);
+    font-size: clamp(4rem, 10vw, 9rem);
+    font-weight: 400;
+    color: var(--white);
+    line-height: 0.9;
+    position: relative;
+    z-index: 2;
+    letter-spacing: -0.02em;
+  }
+
+  .glitch-title::before,
+  .glitch-title::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    font-family: var(--serif);
+    font-size: inherit;
+  }
+  .glitch-title::before {
+    color: var(--red);
+    clip-path: polygon(0 30%, 100% 30%, 100% 50%, 0 50%);
+    transform: translate(-4px, 0);
+    animation: glitch-1 3s infinite;
+  }
+  .glitch-title::after {
+    color: #00eeff;
+    clip-path: polygon(0 60%, 100% 60%, 100% 75%, 0 75%);
+    transform: translate(4px, 0);
+    animation: glitch-2 3s infinite;
+    opacity: 0.6;
+  }
+
+  @keyframes glitch-1 {
+    0%,80%,100% { transform: translate(-4px,0); clip-path: polygon(0 30%,100% 30%,100% 50%,0 50%); }
+    82% { transform: translate(-8px,2px); clip-path: polygon(0 10%,100% 10%,100% 35%,0 35%); }
+    84% { transform: translate(4px,-2px); clip-path: polygon(0 55%,100% 55%,100% 70%,0 70%); }
+    86% { transform: translate(-4px,0); clip-path: polygon(0 30%,100% 30%,100% 50%,0 50%); }
+  }
+  @keyframes glitch-2 {
+    0%,78%,100% { transform: translate(4px,0); clip-path: polygon(0 60%,100% 60%,100% 75%,0 75%); }
+    80% { transform: translate(8px,-3px); clip-path: polygon(0 40%,100% 40%,100% 60%,0 60%); }
+    82% { transform: translate(-4px,2px); clip-path: polygon(0 70%,100% 70%,100% 85%,0 85%); }
+    84% { transform: translate(4px,0); clip-path: polygon(0 60%,100% 60%,100% 75%,0 75%); }
+  }
+
+  .subtitle-main {
+    font-family: var(--display);
+    font-size: clamp(1rem, 2.5vw, 1.6rem);
+    font-style: italic;
+    font-weight: 300;
+    color: var(--grey);
+    margin-top: 24px;
+    letter-spacing: 0.05em;
+    position: relative;
+    z-index: 2;
+  }
+
+  .red-line {
+    width: 120px;
+    height: 2px;
+    background: var(--red);
+    margin-top: 30px;
+    position: relative;
+    z-index: 2;
+    animation: lineBreath 2s ease-in-out infinite alternate;
+  }
+  @keyframes lineBreath {
+    from { width: 120px; opacity: 1; }
+    to   { width: 180px; opacity: 0.7; }
+  }
+
+  .corner-data {
+    position: absolute;
+    bottom: 40px;
+    right: 80px;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--concrete-light);
+    letter-spacing: 0.2em;
+    text-align: right;
+    line-height: 1.8;
+    z-index: 2;
+  }
+
+  /* ── SLIDE 2 — DATI SHOCK ── */
+  .slide-2 {
+    background: var(--black) !important;
+  }
+
+  .slide-2::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(42,42,42,0.5) 0%, transparent 50%);
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--red);
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+  }
+  .section-label::before {
+    content: '▶ ';
+    color: var(--red);
+  }
+
+  .slide-title {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 400;
+    color: var(--white);
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 2;
+    line-height: 1.1;
+  }
+
+  /* BRUTAL TABLE */
+  .brutal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+    position: relative;
+    z-index: 2;
+  }
+
+  .brutal-table thead tr {
+    background: var(--concrete-mid);
+    border-bottom: 2px solid var(--red);
+  }
+
+  .brutal-table thead th {
+    padding: 14px 20px;
+    text-align: left;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--red);
+    font-weight: 400;
+  }
+
+  .brutal-table tbody tr {
+    border-bottom: 1px solid rgba(74,74,74,0.4);
+    transition: background 0.2s;
+  }
+  .brutal-table tbody tr:hover { background: rgba(255,0,0,0.04); }
+
+  .brutal-table tbody td {
+    padding: 16px 20px;
+    color: var(--white);
+    vertical-align: middle;
+  }
+
+  .brutal-table tbody td:first-child {
+    color: var(--grey);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    border-left: 3px solid transparent;
+  }
+
+  .brutal-table tbody tr.alert-row td:first-child {
+    border-left: 3px solid var(--red);
+    color: var(--white);
+  }
+
+  .val-cement {
+    color: var(--concrete-light);
+    font-size: 1.1em;
+  }
+  .val-mud {
+    color: var(--red);
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+
+  .ratio-bar {
+    display: inline-block;
+    height: 6px;
+    background: var(--red);
+    vertical-align: middle;
+    margin-left: 12px;
+    opacity: 0.8;
+  }
+
+  .status-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    padding: 3px 8px;
+    border: 1px solid;
+    vertical-align: middle;
+  }
+  .status-critical {
+    color: var(--red);
+    border-color: var(--red);
+    animation: badgePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes badgePulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .status-warn {
+    color: #ff8800;
+    border-color: #ff8800;
+  }
+  .status-ok {
+    color: var(--grey);
+    border-color: var(--grey);
+  }
+
+  /* ── SLIDE 3 — IL MOSTRO ── */
+  .slide-3 {
+    background: var(--black) !important;
+  }
+
+  .parasite-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+    margin-top: 10px;
+  }
+
+  .parasite-card {
+    border: 1px solid var(--concrete-mid);
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .parasite-card:hover { border-color: var(--red); }
+  .parasite-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--red);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .parasite-card:hover::before { opacity: 1; }
+
+  .card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    display: block;
+    filter: grayscale(1) brightness(0.7);
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .card-text {
+    font-family: var(--display);
+    font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+    color: var(--grey);
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .card-stat {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    color: var(--white);
+    margin-top: 10px;
+  }
+  .card-stat span {
+    font-size: 0.6rem;
+    color: var(--grey);
+    letter-spacing: 0.2em;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+
+  .parasite-intro {
+    font-family: var(--display);
+    font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+    font-style: italic;
+    color: var(--grey);
+    margin-bottom: 24px;
+    max-width: 700px;
+    line-height: 1.6;
+    position: relative;
+    z-index: 2;
+    border-left: 2px solid var(--red);
+    padding-left: 20px;
+  }
+
+  /* ── SLIDE 4 — MAPPA ── */
+  .slide-4 {
+    background: var(--black) !important;
+  }
+
+  .map-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 40px;
+    width: 100%;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .map-container {
+    position: relative;
+  }
+
+  #lario-svg {
+    width: 100%;
+    max-height: 460px;
+  }
+
+  .risk-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid var(--concrete-mid);
+    position: relative;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .dot-critical { background: var(--red); animation: dotPulse 1s ease-in-out infinite; }
+  .dot-high { background: #ff6600; }
+  .dot-medium { background: #ffaa00; }
+
+  @keyframes dotPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,0,0,0.6); }
+    50% { box-shadow: 0 0 0 8px rgba(255,0,0,0); }
+  }
+
+  .legend-info { flex: 1; }
+  .legend-name {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--white);
+    letter-spacing: 0.2em;
+    margin-bottom: 4px;
+  }
+  .legend-desc {
+    font-family: var(--display);
+    font-size: 0.8rem;
+    color: var(--grey);
+    font-style: italic;
+    line-height: 1.4;
+  }
+  .legend-level {
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    color: var(--red);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  /* SVG map markers pulse */
+  .pulse-critical {
+    animation: svgPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes svgPulse {
+    0%,100% { opacity: 1; r: 12; }
+    50% { opacity: 0.5; r: 18; }
+  }
+
+  /* ── SLIDE NUMBER ── */
+  .slide-num {
+    position: absolute;
+    top: 40px;
+    right: 80px;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--concrete-light);
+    letter-spacing: 0.3em;
+    z-index: 3;
+  }
+
+  /* ── PROGRESS LINE ── */
+  .reveal .progress {
+    color: var(--red);
+    height: 2px;
+  }
+
+  /* ── GLITCH SCANLINE EFFECT ON TRANSITION ── */
+  .reveal .slides section.past,
+  .reveal .slides section.future {
+    filter: brightness(0.3);
+  }
+
+  /* override reveal defaults */
+  .reveal h1, .reveal h2, .reveal h3 { text-transform: none; }
+  .reveal p { color: inherit; }
+
+  /* responsive */
+  @media (max-width: 768px) {
+    .reveal .slides section { padding: 40px 30px; }
+    .parasite-grid { grid-template-columns: 1fr; }
+    .map-layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="reveal">
+  <div class="slides">
+
+    <!-- ══════════════════════════════════
+         SLIDE 1 — TITOLO GLITCH
+    ══════════════════════════════════ -->
+    <section class="slide-1" data-transition="zoom">
+      <div class="slide-num">01 / 04</div>
+      <div class="label-top">DOCUMENTO RISERVATO — LAGO DI COMO, ITALIA</div>
+      <h1 class="glitch-title" data-text="LARIO:&nbsp;EROSIONE">LARIO:&nbsp;EROSIONE</h1>
+      <p class="subtitle-main">Cronaca di un disastro annunciato</p>
+      <div class="red-line"></div>
+      <div class="corner-data">
+        COORD. 45°59′N 09°16′E<br>
+        ALT. 198 m.s.l.m.<br>
+        SUPERFICIE 146 km²<br>
+        STATUS: <span style="color:var(--red)">⚠ CRITICO</span>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════
+         SLIDE 2 — DATI SHOCK
+    ══════════════════════════════════ -->
+    <section class="slide-2" data-transition="convex">
+      <div class="slide-num">02 / 04</div>
+      <div class="section-label">DATI SHOCK — BRIENNO E DINTORNI</div>
+      <h2 class="slide-title">Cemento vs Fango:<br>la contabilità del disastro</h2>
+
+      <table class="brutal-table">
+        <thead>
+          <tr>
+            <th>LOCALITA'</th>
+            <th>M³ CEMENTO VERSATO</th>
+            <th>M³ FANGO FRANATO</th>
+            <th>RAPPORTO</th>
+            <th>STATUS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="alert-row">
+            <td>BRIENNO</td>
+            <td class="val-cement">48.200</td>
+            <td class="val-mud">61.400 <span class="ratio-bar" style="width:80px"></span></td>
+            <td style="color:var(--red); font-family:var(--mono);">1:1.27</td>
+            <td><span class="status-badge status-critical">CRITICO</span></td>
+          </tr>
+          <tr>
+            <td>ARGEGNO</td>
+            <td class="val-cement">31.600</td>
+            <td class="val-mud">39.800 <span class="ratio-bar" style="width:55px"></span></td>
+            <td style="color:#ff6600; font-family:var(--mono);">1:1.26</td>
+            <td><span class="status-badge status-warn">ALTO</span></td>
+          </tr>
+          <tr>
+            <td>COLONNO</td>
+            <td class="val-cement">19.400</td>
+            <td class="val-mud">22.100 <span class="ratio-bar" style="width:32px"></span></td>
+            <td style="color:#ff8800; font-family:var(--mono);">1:1.14</td>
+            <td><span class="status-badge status-warn">ALTO</span></td>
+          </tr>
+          <tr>
+            <td>SALA COMACINA</td>
+            <td class="val-cement">14.200</td>
+            <td class="val-mud">11.900 <span class="ratio-bar" style="width:18px"></span></td>
+            <td style="color:var(--grey); font-family:var(--mono);">1:0.84</td>
+            <td><span class="status-badge status-ok">MONIT.</span></td>
+          </tr>
+          <tr>
+            <td>LEZZENO</td>
+            <td class="val-cement">27.800</td>
+            <td class="val-mud">33.600 <span class="ratio-bar" style="width:44px"></span></td>
+            <td style="color:#ff6600; font-family:var(--mono);">1:1.21</td>
+            <td><span class="status-badge status-warn">ALTO</span></td>
+          </tr>
+          <tr class="alert-row">
+            <td>TOTALE BACINO</td>
+            <td class="val-cement" style="font-size:1.15em; color:var(--white);">141.200</td>
+            <td class="val-mud" style="font-size:1.15em;">168.800</td>
+            <td style="color:var(--red); font-family:var(--mono); font-size:1.1em;">1:1.20</td>
+            <td><span class="status-badge status-critical">⚠ ALLARME</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ══════════════════════════════════
+         SLIDE 3 — IL MOSTRO
+    ══════════════════════════════════ -->
+    <section class="slide-3" data-transition="convex">
+      <div class="slide-num">03 / 04</div>
+      <div class="section-label">IMPATTO ANTROPICO — ANALISI PARASSITARIA</div>
+      <h2 class="slide-title">Il Mostro<br>sulle Rive</h2>
+
+      <p class="parasite-intro">
+        L'urbanizzazione costiera agisce come un parassita sistemico: 
+        impermeabilizza il suolo, accelera il deflusso, 
+        e trasforma ogni pioggia intensa in un atto di guerra contro la montagna.
+      </p>
+
+      <div class="parasite-grid">
+        <div class="parasite-card">
+          <span class="card-icon">⬛</span>
+          <div class="card-title">IMPERMEABILIZZAZIONE</div>
+          <div class="card-text">Superfici cementificate che bloccano l'assorbimento idrico naturale del suolo lacustre</div>
+          <div class="card-stat">78% <span>RIVE CEMENTIFICATE NORD</span></div>
+        </div>
+        <div class="parasite-card">
+          <span class="card-icon">⚙</span>
+          <div class="card-title">PRESSIONE EDIFICATORIA</div>
+          <div class="card-text">Costruzioni in fascia di rispetto a 10 m dal pelo libero: 1.247 strutture censite</div>
+          <div class="card-stat">+340% <span>DAL 1960 AD OGGI</span></div>
+        </div>
+        <div class="parasite-card">
+          <span class="card-icon">▼</span>
+          <div class="card-title">DESTABILIZZAZIONE VERSANTI</div>
+          <div class="card-text">Scavi, sbancamenti e vibrazioni da cantiere hanno ridotto la coesione dei versanti del 60%</div>
+          <div class="card-stat">−2.8m <span>QUOTA MEDIA SUOLO NATURALE</span></div>
+        </div>
+        <div class="parasite-card" style="border-color: rgba(255,0,0,0.4);">
+          <span class="card-icon" style="filter:none;">⚠</span>
+          <div class="card-title">RISCHIO RESIDUO</div>
+          <div class="card-text">12 colate detritiche documentate in 40 anni. Frequenza: in accelerazione esponenziale post-2010</div>
+          <div class="card-stat" style="color:var(--red)">×4.2 <span>EVENTI / DECENNIO</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════
+         SLIDE 4 — MAPPA DEL RISCHIO
+    ══════════════════════════════════ -->
+    <section class="slide-4" data-transition="zoom">
+      <div class="slide-num">04 / 04</div>
+      <div class="section-label">MAPPA DEL RISCHIO — LAGO DI COMO</div>
+      <h2 class="slide-title" style="margin-bottom:20px;">Zone Critiche:<br>Il Lago Che Trema</h2>
+
+      <div class="map-layout">
+        <div class="map-container">
+          <svg id="lario-svg" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="lakeGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#0d1a2a"/>
+                <stop offset="100%" stop-color="#050d14"/>
+              </radialGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glowRed">
+                <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- Background -->
+            <rect width="400" height="500" fill="#050505"/>
+
+            <!-- Grid lines -->
+            <g stroke="#1a1a1a" stroke-width="0.5">
+              <line x1="0" y1="100" x2="400" y2="100"/>
+              <line x1="0" y1="200" x2="400" y2="200"/>
+              <line x1="0" y1="300" x2="400" y2="300"/>
+              <line x1="0" y1="400" x2="400" y2="400"/>
+              <line x1="100" y1="0" x2="100" y2="500"/>
+              <line x1="200" y1="0" x2="200" y2="500"/>
+              <line x1="300" y1="0" x2="300" y2="500"/>
+            </g>
+
+            <!-- LAGO DI COMO — forma stilizzata (Y rovesciata) -->
+            <!-- Ramo di Lecco (est) -->
+            <path d="M 210 60
+                     C 225 90, 235 130, 240 160
+                     C 245 190, 248 210, 245 240
+                     C 242 260, 235 270, 228 280
+                     C 222 288, 216 294, 212 300"
+              stroke="#1a3a5c" stroke-width="28" fill="none" stroke-linecap="round"/>
+
+            <!-- Ramo di Como (ovest) -->
+            <path d="M 180 60
+                     C 165 90, 155 130, 152 160
+                     C 148 190, 146 210, 148 240
+                     C 150 260, 158 272, 166 282
+                     C 172 290, 180 295, 186 300"
+              stroke="#1a3a5c" stroke-width="28" fill="none" stroke-linecap="round"/>
+
+            <!-- Ramo centrale / Colico in su -->
+            <path d="M 212 300
+                     C 207 312, 202 320, 198 335
+                     C 194 350, 192 370, 194 395
+                     C 196 415, 200 430, 202 445"
+              stroke="#1a3a5c" stroke-width="30" fill="none" stroke-linecap="round"/>
+            <path d="M 186 300
+                     C 191 312, 196 320, 198 335"
+              stroke="#1a3a5c" stroke-width="30" fill="none" stroke-linecap="round"/>
+
+            <!-- Fill water lighter interior -->
+            <path d="M 210 60 C 225 90,235 130,240 160 C 245 190,248 210,245 240
+                     C 242 260,235 270,228 280 C 222 288,216 294,212 300
+                     C 207 312,202 320,198 335 C 194 350,192 370,194 395
+                     C 196 415,200 430,202 445
+                     L 194 445 C 192 430,188 415,186 395
+                     C 184 370,184 350,186 335 C 188 320,192 312,186 300
+                     C 180 295,172 290,166 282 C 158 272,150 260,148 240
+                     C 146 210,148 190,152 160 C 155 130,165 90,180 60 Z"
+              fill="url(#lakeGrad)" opacity="0.9"/>
+
+            <!-- Outline lake -->
+            <path d="M 210 60 C 225 90,235 130,240 160 C 245 190,248 210,245 240
+                     C 242 260,235 270,228 280 C 222 288,216 294,212 300
+                     C 207 312,202 320,198 335 C 194 350,192 370,194 395
+                     C 196 415,200 430,202 445
+                     L 194 445 C 192 430,188 415,186 395
+                     C 184 370,184 350,186 335 C 188 320,192 312,186 300
+                     C 180 295,172 290,166 282 C 158 272,150 260,148 240
+                     C 146 210,148 190,152 160 C 155 130,165 90,180 60 Z"
+              fill="none" stroke="#2a4a6a" stroke-width="1.5"/>
+
+            <!-- ── ZONE CRITICHE ── -->
+
+            <!-- COMO (sud-ovest) -->
+            <circle cx="155" cy="300" r="18" fill="rgba(255,0,0,0.12)" stroke="#FF0000" stroke-width="1.5" filter="url(#glowRed)">
+              <animate attributeName="r" values="14;22;14" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="155" cy="300" r="6" fill="#FF0000" filter="url(#glowRed)"/>
+            <text x="120" y="328" font-family="'Share Tech Mono', monospace" font-size="9" fill="#FF0000" letter-spacing="2">COMO</text>
+            <line x1="155" y1="306" x2="145" y2="322" stroke="#FF0000" stroke-width="0.8" opacity="0.6"/>
+
+            <!-- LECCO (sud-est) -->
+            <circle cx="242" cy="295" r="18" fill="rgba(255,0,0,0.10)" stroke="#FF0000" stroke-width="1.5" filter="url(#glowRed)">
+              <animate attributeName="r" values="13;20;13" dur="2.3s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="1;0.4;1" dur="2.3s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="242" cy="295" r="6" fill="#FF0000" filter="url(#glowRed)"/>
+            <text x="252" y="300" font-family="'Share Tech Mono', monospace" font-size="9" fill="#FF0000" letter-spacing="2">LECCO</text>
+
+            <!-- BRIENNO (ramo ovest, metà circa) -->
+            <circle cx="152" cy="210" r="22" fill="rgba(255,0,0,0.18)" stroke="#FF0000" stroke-width="2" filter="url(#glowRed)">
+              <animate attributeName="r" values="18;28;18" dur="1.6s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="152" cy="210" r="7" fill="#FF0000" filter="url(#glowRed)"/>
+            <text x="100" y="207" font-family="'Share Tech Mono', monospace" font-size="9" fill="#FF0000" letter-spacing="2">BRIENNO</text>
+            <line x1="152" y1="210" x2="135" y2="207" stroke="#FF0000" stroke-width="0.8" opacity="0.7"/>
+            <!-- Alert indicator -->
+            <text x="113" y="220" font-family="'Share Tech Mono', monospace" font-size="7" fill="rgba(255,0,0,0.7)">⚠ FRANA 2024</text>
+
+            <!-- ARGEGNO — zona arancio -->
+            <circle cx="150" cy="240" r="10" fill="rgba(255,102,0,0.15)" stroke="#ff6600" stroke-width="1.2">
+              <animate attributeName="r" values="8;13;8" dur="3s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="150" cy="240" r="4" fill="#ff6600"/>
+
+            <!-- COLICO — nord -->
+            <circle cx="200" cy="80" r="10" fill="rgba(255,170,0,0.12)" stroke="#ffaa00" stroke-width="1.2">
+              <animate attributeName="r" values="8;14;8" dur="4s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="200" cy="80" r="4" fill="#ffaa00"/>
+            <text x="208" y="84" font-family="'Share Tech Mono', monospace" font-size="8" fill="#ffaa00" letter-spacing="1">COLICO</text>
+
+            <!-- Coordinate labels -->
+            <text x="8" y="492" font-family="'Share Tech Mono', monospace" font-size="7" fill="#333333">45°50′N</text>
+            <text x="8" y="68" font-family="'Share Tech Mono', monospace" font-size="7" fill="#333333">46°08′N</text>
+            <text x="350" y="492" font-family="'Share Tech Mono', monospace" font-size="7" fill="#333333">09°22′E</text>
+
+            <!-- Scale bar -->
+            <line x1="290" y1="475" x2="370" y2="475" stroke="#333333" stroke-width="1"/>
+            <line x1="290" y1="470" x2="290" y2="480" stroke="#333333" stroke-width="1"/>
+            <line x1="370" y1="470" x2="370" y2="480" stroke="#333333" stroke-width="1"/>
+            <text x="305" y="490" font-family="'Share Tech Mono', monospace" font-size="7" fill="#333333">0        15 km</text>
+
+            <!-- Title overlay -->
+            <text x="200" y="25" font-family="'Share Tech Mono', monospace" font-size="8" fill="#333333" text-anchor="middle" letter-spacing="4">LAGO DI COMO — MAPPA RISCHIO IDROGEOLOGICO</text>
+          </svg>
+        </div>
+
+        <div class="risk-legend">
+          <div class="legend-item">
+            <div class="legend-dot dot-critical"></div>
+            <div class="legend-info">
+              <div class="legend-name">BRIENNO</div>
+              <div class="legend-desc">Frana attiva 2024, 61.400 m³ di fango. Versante destabilizzato da sbancamenti abusivi</div>
+              <div class="legend-level" style="margin-top:6px">⚠ RISCHIO MASSIMO</div>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot dot-critical"></div>
+            <div class="legend-info">
+              <div class="legend-name">COMO</div>
+              <div class="legend-desc">Riva completamente impermeabilizzata. Rischio esondazione in evento 200 anni</div>
+              <div class="legend-level" style="margin-top:6px">⚠ RISCHIO MASSIMO</div>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot dot-critical"></div>
+            <div class="legend-info">
+              <div class="legend-name">LECCO</div>
+              <div class="legend-desc">Zona industriale storica. Sedimenti contaminati, frane attive sul Resegone</div>
+              <div class="legend-level" style="margin-top:6px">⚠ RISCHIO MASSIMO</div>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot dot-high"></div>
+            <div class="legend-info">
+              <div class="legend-name">FASCIA OVEST</div>
+              <div class="legend-desc">Argegno, Colonno, Ossuccio: edificazione intensa su conoidi di deiezione attivi</div>
+              <div class="legend-level" style="color:#ff6600; margin-top:6px">▲ RISCHIO ELEVATO</div>
+            </div>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot dot-medium"></div>
+            <div class="legend-info">
+              <div class="legend-name">COLICO / NORD</div>
+              <div class="legend-desc">Piana alluvionale: rischio esondazione Mera, subsidenza attiva</div>
+              <div class="legend-level" style="color:#ffaa00; margin-top:6px">◆ RISCHIO MEDIO</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /slides -->
+</div><!-- /reveal -->
+
+<!-- Reveal.js scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+
+<script>
+  // Init Reveal.js
+  Reveal.initialize({
+    hash: true,
+    transition: 'convex',
+    transitionSpeed: 'slow',
+    backgroundTransition: 'fade',
+    progress: true,
+    controls: true,
+    controlsLayout: 'bottom-right',
+    slideNumber: false,
+    center: false,
+    width: '100%',
+    height: '100%',
+    margin: 0,
+    minScale: 0.8,
+    maxScale: 1.2,
+  });
+
+  // ── GSAP ANIMATIONS ──
+  gsap.registerPlugin();
+
+  Reveal.on('slidechanged', event => {
+    const slide = event.currentSlide;
+    const idx = event.indexh;
+
+    // SLIDE 1 — entrance
+    if (idx === 0) {
+      gsap.from('.label-top', { duration: 0.6, y: -20, opacity: 0, delay: 0.2 });
+      gsap.from('.glitch-title', { duration: 0.8, x: -60, opacity: 0, delay: 0.4, ease: 'power3.out' });
+      gsap.from('.subtitle-main', { duration: 0.6, y: 20, opacity: 0, delay: 0.8 });
+      gsap.from('.red-line', { duration: 0.8, scaleX: 0, transformOrigin: 'left', delay: 1.0 });
+      gsap.from('.corner-data', { duration: 0.5, opacity: 0, delay: 1.2 });
+    }
+
+    // SLIDE 2 — table rows stagger
+    if (idx === 1) {
+      gsap.from('.section-label', { duration: 0.4, x: -30, opacity: 0, delay: 0.1 });
+      gsap.from('.slide-title', { duration: 0.6, y: 30, opacity: 0, delay: 0.2, ease: 'power2.out' });
+      gsap.from('.brutal-table thead', { duration: 0.4, opacity: 0, delay: 0.4 });
+      gsap.from('.brutal-table tbody tr', {
+        duration: 0.4,
+        x: -40,
+        opacity: 0,
+        stagger: 0.1,
+        delay: 0.5,
+        ease: 'power2.out'
+      });
+    }
+
+    // SLIDE 3 — cards
+    if (idx === 2) {
+      gsap.from('.parasite-intro', { duration: 0.5, opacity: 0, x: -30, delay: 0.3 });
+      gsap.from('.parasite-card', {
+        duration: 0.5,
+        y: 40,
+        opacity: 0,
+        stagger: 0.12,
+        delay: 0.5,
+        ease: 'back.out(1.4)'
+      });
+    }
+
+    // SLIDE 4 — map
+    if (idx === 3) {
+      gsap.from('#lario-svg', { duration: 1, scale: 0.85, opacity: 0, delay: 0.3, ease: 'power3.out' });
+      gsap.from('.legend-item', {
+        duration: 0.45,
+        x: 30,
+        opacity: 0,
+        stagger: 0.12,
+        delay: 0.6,
+        ease: 'power2.out'
+      });
+    }
+  });
+
+  // Trigger slide 1 on load
+  Reveal.on('ready', () => {
+    gsap.from('.label-top', { duration: 0.6, y: -20, opacity: 0, delay: 0.5 });
+    gsap.from('.glitch-title', { duration: 1, x: -80, opacity: 0, delay: 0.7, ease: 'power4.out' });
+    gsap.from('.subtitle-main', { duration: 0.7, y: 25, opacity: 0, delay: 1.1 });
+    gsap.from('.red-line', { duration: 1, scaleX: 0, transformOrigin: 'left', delay: 1.4 });
+    gsap.from('.corner-data', { duration: 0.5, opacity: 0, delay: 1.6 });
+  });
+
+  // Intermittent glitch flash
+  setInterval(() => {
+    const t = document.querySelector('.glitch-title');
+    if (!t) return;
+    t.style.transform = `skewX(${(Math.random()*4-2).toFixed(1)}deg)`;
+    setTimeout(() => { t.style.transform = 'skewX(0deg)'; }, 80);
+  }, 4000 + Math.random() * 3000);
+</script>
+</body>
+</html>
